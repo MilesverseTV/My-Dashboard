@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>24/7 Streaming Dashboard</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<h2>🕸️ SpiderVerse Streaming Dashboard</h2>
+
+<div class="video-frame" id="videoFrame">
+  <video id="player" playsinline controls muted></video>
+  <div class="live">LIVE</div>
+</div>
+
+<div class="playlist-panel" id="playlistPanel">
+  Playlist is empty. Add videos below.
+</div>
+
+<div class="controls">
+  <label class="bubble" for="fileInput">Add Video</label>
+  <input type="file" id="fileInput" accept="video/mp4" multiple onchange="addVideos()">
+
+  <label class="bubble" for="overlayInput">Add Overlay</label>
+  <input type="file" id="overlayInput" accept="image/png,image/gif" multiple onchange="addOverlay(this.files)">
+
+  <div class="bubble" id="unlockAudioBtn" onclick="unlockAudio()">Start Audio</div>
+  <div class="bubble" onclick="toggleLoop()">Loop Playlist</div>
+</div>
+
+<script src="js/script.js"></script>
+</body>
+</html>
