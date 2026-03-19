@@ -4,32 +4,177 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>24/7 Streaming Dashboard</title>
-<link rel="stylesheet" href="css/style.css">
+<style>
+body { margin:0; background:black; font-family:sans-serif; text-align:center; }
+.video-frame {
+  position:relative; width:90%; max-width:3840px; aspect-ratio:16/9;
+  margin:auto; overflow:hidden; border:8px solid #ff1a1a; border-radius:12px; background:black;
+}
+video { width:100%; height:100%; object-fit:contain; display:block; }
+.live { position:absolute; top:10px; left:40%; background:red; color:white;
+  padding:5px 10px; font-weight:bold; border-radius:6px; animation:blink 1s infinite; }
+@keyframes blink {50%{opacity:0.3;}}
+.controls { margin-top:10px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+.bubble { background:linear-gradient(135deg,#ff0000,#0000ff); color:white; padding:10px 20px;
+  border-radius:50px; cursor:pointer; font-weight:bold; text-align:center; min-width:120px;
+  transition:transform 0.2s; }
+.bubble:hover { transform:scale(1.1); }
+input[type="file"]{ display:none; }
+.playlist-panel { width:90%; max-width:3840px; margin:auto;
+  background:linear-gradient(135deg,#ff0000,#0000ff); padding:10px;
+  border-radius:50px; color:white; text-align:left; min-height:100px;
+  max-height:400px; overflow-y:auto; margin-top:15px; }
+.playlist-item { display:flex; justify-content:space-between; align-items:center;
+  margin:5px 0; cursor:grab; background:rgba(0,0,0,0.7); padding:5px; border-radius:30px; }
+.playlist-item button { margin-left:5px; padding:2px 6px; }
+.overlay-image { position:absolute; top:0; left:0; cursor:move; max-width:150px; max-height:150px; }
+</style>
 </head>
 <body>
 
-<h2>🕸️ SpiderVerse Streaming Dashboard</h2>
+<h2 style="color:#ff0000">Streaming Dashboard</h2>
 
 <div class="video-frame" id="videoFrame">
-  <video id="player" playsinline controls muted></video>
+  <video id="player" playsinline controls></video>
   <div class="live">LIVE</div>
 </div>
 
-<div class="playlist-panel" id="playlistPanel">
-  Playlist is empty. Add videos below.
-</div>
+<div class="playlist-panel" id="playlistPanel">Playlist is empty. Add videos below.</div>
 
 <div class="controls">
   <label class="bubble" for="fileInput">Add Video</label>
   <input type="file" id="fileInput" accept="video/mp4" multiple onchange="addVideos()">
 
+  <div class="bubble" onclick="playVideo()">Play Video</div>
+  <div class="bubble" onclick="toggleLoop()">Loop Playlist</div>
+
   <label class="bubble" for="overlayInput">Add Overlay</label>
   <input type="file" id="overlayInput" accept="image/png,image/gif" multiple onchange="addOverlay(this.files)">
 
   <div class="bubble" id="unlockAudioBtn" onclick="unlockAudio()">Start Audio</div>
-  <div class="bubble" onclick="toggleLoop()">Loop Playlist</div>
 </div>
 
-<script src="js/script.js"></script>
+<script>
+let playlist = [];
+let index = 0;
+let loopPlaylist = true;
+let audioUnlocked = false;
+const player = document.getElementById("player");
+const playlistPanel = document.getElementById("playlistPanel");
+const unlockBtn = document.getElementById("unlockAudioBtn");
+const videoFrame = document.getElementById("videoFrame");
+let overlays = [];
+
+/* Playlist functions */
+function addVideos(){
+  const files = document.getElementById("fileInput").files;
+  if(!files.length) return;
+  for(let f of files){
+    const url = URL.createObjectURL(f);
+    playlist.push({src:url, name:f.name});
+  }
+  document.getElementById("fileInput").value = "";
+  playVideo(playlist.length-1);
+}
+
+function playVideo(i=index){
+  if(playlist.length===0) return;
+  index = i;
+  player.src = playlist[index].src;
+  player.play();
+  renderPlaylist();
+}
+
+player.onended = () => {
+  if(playlist.length===0) return;
+  index = (index+1)%playlist.length;
+  if(!loopPlaylist && index===0) return;
+  playVideo();
+};
+
+function toggleLoop(){ 
+  loopPlaylist=!loopPlaylist; 
+  alert("Loop: "+(loopPlaylist?"ON":"OFF")); 
+}
+
+function renderPlaylist(){
+  playlistPanel.innerHTML = "";
+  if(playlist.length===0){
+    playlistPanel.innerHTML = "Playlist is empty. Add videos below.";
+    return;
+  }
+  playlist.forEach((v,i)=>{
+    const div = document.createElement("div");
+    div.className="playlist-item";
+    div.draggable=true;
+    div.innerHTML = `<span>${v.name}</span>
+      <div>
+        <button onclick="playVideo(${i})">Play</button>
+        <button onclick="playlist.splice(${i},1);renderPlaylist();">Remove</button>
+      </div>`;
+    div.addEventListener("dragstart", e => e.dataTransfer.setData("text/plain", i));
+    div.addEventListener("dragover", e => e.preventDefault());
+    div.addEventListener("drop", e => {
+      const startIndex = parseInt(e.dataTransfer.getData("text/plain"));
+      const endIndex = i;
+      const temp = playlist[startIndex];
+      playlist.splice(startIndex,1);
+      playlist.splice(endIndex,0,temp);
+      renderPlaylist();
+    });
+    playlistPanel.appendChild(div);
+  });
+}
+
+/* Overlay functions */
+function addOverlay(files){
+  for(let f of files){
+    const url = URL.createObjectURL(f);
+    const img = document.createElement("img");
+    img.src = url;
+    img.className="overlay-image";
+    img.style.left = "10px";
+    img.style.top = "10px";
+
+    let offsetX, offsetY, dragging=false;
+    img.addEventListener("mousedown", e=>{
+      dragging=true;
+      offsetX = e.offsetX;
+      offsetY = e.offsetY;
+    });
+    window.addEventListener("mousemove", e=>{
+      if(!dragging) return;
+      const rect = videoFrame.getBoundingClientRect();
+      let x = e.clientX - rect.left - offsetX;
+      let y = e.clientY - rect.top - offsetY;
+      x = Math.max(0, Math.min(x, rect.width - img.width));
+      y = Math.max(0, Math.min(y, rect.height - img.height));
+      img.style.left = x+"px";
+      img.style.top = y+"px";
+    });
+    window.addEventListener("mouseup", e=>{ dragging=false; });
+
+    img.addEventListener("dblclick", ()=>{ img.remove(); overlays = overlays.filter(o=>o!==img); });
+
+    overlays.push(img);
+    videoFrame.appendChild(img);
+  }
+}
+
+/* Unlock audio */
+function unlockAudio(){
+  if(audioUnlocked) return;
+  player.muted = false;
+  if(playlist.length>0) player.play();
+  audioUnlocked = true;
+  unlockBtn.style.display = "none";
+}
+
+/* Initialize */
+window.onload = ()=>{
+  renderPlaylist();
+}
+</script>
+
 </body>
 </html>
