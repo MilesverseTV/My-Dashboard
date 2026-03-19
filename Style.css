@@ -1,3 +1,13 @@
-/* Style.css content copied from Style.css.txt */
-
-/* Add your CSS styles here */
+body { margin:0; font-family:sans-serif; background:black; color:white; text-align:center; }
+.video-frame { position:relative; width:90%; max-width:3840px; aspect-ratio:16/9; margin:auto; overflow:hidden; border:8px solid #ff1a1a; border-radius:12px; background:black; box-shadow: inset 0 0 0 4px #1a1aff; }
+video { width:100%; height:100%; object-fit:contain; display:block; }
+.live { position:absolute; top:10px; left:40%; background:red; color:white; padding:5px 10px; font-weight:bold; border-radius:6px; animation:blink 1s infinite; }
+@keyframes blink {50%{opacity:0.3;}}
+.controls { margin-top:10px; display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+.bubble { background:linear-gradient(135deg,#ff0000,#0000ff); color:white; padding:10px 20px; border-radius:50px; cursor:pointer; font-weight:bold; text-align:center; min-width:120px; transition:transform 0.2s; }
+.bubble:hover { transform:scale(1.1); }
+input[type="file"]{ display:none; }
+.playlist-panel { width:90%; max-width:3840px; margin:auto; background:linear-gradient(135deg,#ff0000,#0000ff); padding:10px; border-radius:50px; color:white; text-align:left; min-height:100px; max-height:400px; overflow-y:auto; margin-top:15px; }
+.playlist-item { display:flex; justify-content:space-between; align-items:center; margin:5px 0; cursor:grab; background:rgba(0,0,0,0.7); padding:5px; border-radius:30px; }
+.playlist-item button { margin-left:5px; padding:2px 6px; }
+.overlay-image { position:absolute; top:0; left:0; cursor:move; max-width:150px; max-height:150px; }
